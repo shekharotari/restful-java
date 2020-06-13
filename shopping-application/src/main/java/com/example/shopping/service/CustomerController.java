@@ -9,9 +9,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,14 +28,15 @@ public class CustomerController {
 	private Map<Integer, CustomerDO> customerDB = new ConcurrentHashMap<Integer, CustomerDO>();
 	private AtomicInteger idCounter = new AtomicInteger(0);
 	
-	@PostMapping(consumes = MediaType.APPLICATION_XML_VALUE)
-	public ResponseEntity<CustomerDO> createCustomer(@RequestBody CustomerDO customerDO) {
-		customerDO.setId(idCounter.incrementAndGet());
-		customerDB.put(customerDO.getId(), customerDO);
+	@GetMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+	public ResponseEntity<CustomerDOList> getCustomers() {
+		List<CustomerDO> customers = new ArrayList<CustomerDO>();
+		customerDB.values().forEach((CustomerDO customerDO) -> customers.add(customerDO));
 		
-		System.out.println("Created customer id " + customerDO.getId());
+		CustomerDOList customerDOList = new CustomerDOList();
+		customerDOList.setCustomers(customers);
 		
-		ResponseEntity<CustomerDO> response = new ResponseEntity<CustomerDO>(customerDO, HttpStatus.CREATED);
+		ResponseEntity<CustomerDOList> response = new ResponseEntity<CustomerDOList>(customerDOList, HttpStatus.OK);
 		return response;
 	}
 	
@@ -48,15 +51,46 @@ public class CustomerController {
 		return response;
 	}
 	
-	@GetMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-	public ResponseEntity<CustomerDOList> getCustomers() {
-		List<CustomerDO> customers = new ArrayList<CustomerDO>();
-		customerDB.values().forEach((CustomerDO customerDO) -> customers.add(customerDO));
+	@PostMapping(consumes = MediaType.APPLICATION_XML_VALUE, produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+	public ResponseEntity<CustomerDO> createCustomer(@RequestBody CustomerDO customerDO) {
+		customerDO.setId(idCounter.incrementAndGet());
+		customerDB.put(customerDO.getId(), customerDO);
 		
-		CustomerDOList customerDOList = new CustomerDOList();
-		customerDOList.setCustomers(customers);
+		System.out.println("Created customer id " + customerDO.getId());
 		
-		ResponseEntity<CustomerDOList> response = new ResponseEntity<CustomerDOList>(customerDOList, HttpStatus.OK);
+		ResponseEntity<CustomerDO> response = new ResponseEntity<CustomerDO>(customerDO, HttpStatus.CREATED);
 		return response;
 	}
+	
+	@PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_XML_VALUE, produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+	public ResponseEntity<CustomerDO> updateCustomer(@PathVariable(value = "id") int id, @RequestBody CustomerDO customerDO) {
+		CustomerDO customer = customerDB.get(id);
+		if (customer == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer with id " + id + " not found");
+		}
+		
+		customer.setCity(customerDO.getCity());
+		customer.setCountry(customerDO.getCountry());
+		
+		System.out.println("Updated customer id " + customerDO.getId());
+		
+		ResponseEntity<CustomerDO> response = new ResponseEntity<CustomerDO>(customer, HttpStatus.OK);
+		return response;
+	}
+	
+	@DeleteMapping(value = "/{id}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+	public ResponseEntity<CustomerDO> deleteCustomer(@PathVariable(value = "id") int id) {
+		CustomerDO customer = customerDB.get(id);
+		if (customer == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer with id " + id + " not found");
+		}
+		
+		customerDB.remove(id);
+		
+		System.out.println("Removed customer id " + customer.getId());
+		
+		ResponseEntity<CustomerDO> response = new ResponseEntity<CustomerDO>(customer, HttpStatus.OK);
+		return response;
+	}
+	
 }
