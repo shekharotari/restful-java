@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -52,9 +53,29 @@ public class CustomerController {
 		return response;
 	}
 	
-	@GetMapping(value = "/byNameAndCity/{name}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-	public ResponseEntity<CustomerDO> getCustomer(@PathVariable(value = "name") String name, 
+	@GetMapping(value = "/byNameAndCityMatrix/{name}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+	public ResponseEntity<CustomerDO> getCustomerByMatrixParam(@PathVariable(value = "name") String name, 
 			@MatrixVariable(value = "city") String city) {
+		CustomerDO customer = null;
+		
+		for (CustomerDO customerDO : customerDB.values()) {
+			if (customerDO.getFirstName().equalsIgnoreCase(name) && customerDO.getCity().equalsIgnoreCase(city)) {
+				customer = customerDO;
+				break;
+			}
+		}
+		
+		if (customer == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer with name " + name + " and city " + city + " not found");
+		}
+		
+		ResponseEntity<CustomerDO> response = new ResponseEntity<CustomerDO>(customer, HttpStatus.OK);
+		return response;
+	}
+	
+	@GetMapping(value = "/byNameAndCityQuery", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+	public ResponseEntity<CustomerDO> getCustomerByQueryParam(@RequestParam(value = "name") String name, 
+			@RequestParam(value = "city") String city) {
 		CustomerDO customer = null;
 		
 		for (CustomerDO customerDO : customerDB.values()) {
