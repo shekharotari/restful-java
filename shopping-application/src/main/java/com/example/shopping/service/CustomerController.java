@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.MatrixVariable;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -45,6 +46,26 @@ public class CustomerController {
 		CustomerDO customer = customerDB.get(id);
 		if (customer == null) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer with id " + id + " not found");
+		}
+		
+		ResponseEntity<CustomerDO> response = new ResponseEntity<CustomerDO>(customer, HttpStatus.OK);
+		return response;
+	}
+	
+	@GetMapping(value = "/byNameAndCity/{name}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+	public ResponseEntity<CustomerDO> getCustomer(@PathVariable(value = "name") String name, 
+			@MatrixVariable(value = "city") String city) {
+		CustomerDO customer = null;
+		
+		for (CustomerDO customerDO : customerDB.values()) {
+			if (customerDO.getFirstName().equalsIgnoreCase(name) && customerDO.getCity().equalsIgnoreCase(city)) {
+				customer = customerDO;
+				break;
+			}
+		}
+		
+		if (customer == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer with name " + name + " and city " + city + " not found");
 		}
 		
 		ResponseEntity<CustomerDO> response = new ResponseEntity<CustomerDO>(customer, HttpStatus.OK);
